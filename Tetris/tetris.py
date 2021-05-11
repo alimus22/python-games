@@ -21,7 +21,9 @@ BOARD_WIDTH = 400
 WIDTH = 40
 ROWS = 20
 COLS = 10
+font = pygame.font.SysFont('freesansbold.ttf', 35)
 WIN = pygame.display.set_mode((W_DIM, H_DIM))
+pygame.display.set_caption("Tetris")
 
 figures = {
     'I': [[1, 5, 9, 13], [4, 5, 6, 7]],
@@ -63,7 +65,7 @@ class Cell:
     def draw(self, win):
         if self.tetramino == None:
             pygame.draw.rect(
-                win, WHITE, (self.col, self.row, self.width, self.width))
+                win, WHITE, (self.col * self.width, self.row * self.width, self.width, self.width))
 
 
 class Tetramino:
@@ -99,18 +101,29 @@ def draw_grid(rows, cols, width, win, board_dim, h_dim):
 
 
 def draw(grid, rows, cols, width, win, w_dim, h_dim):
-    win.fill(WHITE)
+    win.fill(BLACK)
     for row in grid:
         for cell in row:
             cell.draw(win)
     draw_grid(rows, cols, width, win, w_dim, h_dim)
+    message = font.render("Score: ", True, RED)
+    win.blit(message, (415, 100))
+    score = 0
+    update_score(win, score)
     pygame.display.update()
+
+
+def update_score(win, score):
+    display_score = font.render(str(score), True, RED)
+    win.blit(display_score, (445, 130))
 
 
 def main(rows, cols, width, win, w_dim, h_dim):
     run = True
     grid = make_grid(rows, cols, width)
+
     while run:
+
         draw(grid, rows, cols, width, win, w_dim, h_dim)
 
         for event in pygame.event.get():
