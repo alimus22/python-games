@@ -32,12 +32,12 @@ SHAPES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z']
 
 figures = {
     'I': [[1, 5, 9, 13], [4, 5, 6, 7]],
-    'J': [[1, 5, 8, 9], [0, 4, 5, 6], [1, 2, 5, 9], [0, 1, 2, 6]],
-    'L': [[1, 5, 9, 10], [0, 1, 2, 4], [0, 1, 5, 9], [2, 4, 5, 6]],
+    'J': [[1, 2, 5, 9], [4, 5, 6, 10], [1, 5, 9, 8], [0, 4, 5, 6]],
+    'L': [[1, 2, 6, 10], [3, 5, 6, 7], [2, 6, 10, 11], [5, 6, 7, 9]],
     'O': [[1, 2, 5, 6]],
-    'S': [[1, 2, 4, 5], [1, 5, 6, 10]],
+    'S': [[6, 7, 9, 10], [1, 5, 6, 10]],
     'T': [[1, 4, 5, 6], [1, 5, 6, 9], [4, 5, 6, 9], [1, 4, 5, 9]],
-    'Z': [[0, 1, 5, 6], [2, 5, 6, 9]]
+    'Z': [[4, 5, 9, 10], [2, 6, 5, 9]]
 }
 
 colors = {
@@ -101,22 +101,17 @@ class Tetramino:
                 count += 1
 
     def next_pos_available(self, grid, rows, cols, next_pos):
-        count = 0
+        available = True
         next_x, next_y = next_pos
-        is_available = True
         for i in range(4):
             for j in range(4):
                 cell_x = next_x + j
                 cell_y = next_y + i
-                if count in self.graphs[self.disposition]:
-                    if cell_x > cols - 1 or cell_x < 0 or cell_y > rows - 1 or cell_y < 0:
-                        return False
-                    else:
-                        # print(str(cell_x) + ", " + str(cell_y))
-                        cell = grid[cell_x][cell_y]
-                        if cell.is_occupied():
-                            return False
-        return True
+                if i * 4 + j in self.graphs[self.disposition]:
+                    # print("From next_pos_available")
+                    if cell_x > cols - 1 or cell_x < 0 or cell_y > rows - 1 or grid[cell_y][cell_x].is_occupied():
+                        available = False
+        return available
 
     def rotate(self, grid, rows, cols):
         old_disposition = self.disposition
@@ -136,20 +131,22 @@ class Tetramino:
         if self.next_pos_available(grid, rows, cols, (self.x_pos, self.y_pos + 1)):
             self.y_pos += 1
         else:
+            # print('From go_down not working')
             self.locked = True
 
     def lock(self, grid):
-        count = 0
         for i in range(4):
             for j in range(4):
                 cell_x = self.x_pos + j
                 cell_y = self.y_pos + i
-                if count in self.graphs[self.disposition]:
-                    cell = grid[cell_x][cell_y]
+                if i * 4 + j in self.graphs[self.disposition]:
+                    # print('From lock')
+                    cell = grid[cell_y][cell_x]
                     cell.make_occupied(self.type)
 
     def is_locked(self):
-        return self.is_locked
+        # print('From is_locked')
+        return self.locked
 
 
 def make_grid(rows, cols, width):
@@ -200,19 +197,19 @@ def main(rows, cols, width, win, w_dim, h_dim):
     run = True
     grid = make_grid(rows, cols, width)
     available_shapes = SHAPES.copy()
-    current_shape = get_shape(available_shapes)
-    next_shape = get_shape(available_shapes)
+    current_shape = 'L'
+    next_shape = 'L'
     tetramino = Tetramino(current_shape, 4, 0)
     pressing_down = False
-    fps = 15
+    fps = 5
 
     while run:
         if pressing_down:
-            fps *= 2
+            fps = 30
         if tetramino.is_locked():
             tetramino.lock(grid)
-            # tetramino = Tetramino(next_shape, 4, 0)
-            # next_shape = get_shape(available_shapes)
+            tetramino = Tetramino(next_shape, 4, 0)
+            next_shape = 'L'
 
         for event in pygame.event.get():
 
@@ -232,8 +229,10 @@ def main(rows, cols, width, win, w_dim, h_dim):
                     pressing_down = True
             if event.type == KEYUP:
                 pressing_down = False
-            tetramino.go_down(grid, rows, cols)
-            draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino)
+                fps = 5
+
+        tetramino.go_down(grid, rows, cols)
+        draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino)
         clock.tick(fps)
 
 
