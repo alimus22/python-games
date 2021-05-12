@@ -197,8 +197,8 @@ def main(rows, cols, width, win, w_dim, h_dim):
     run = True
     grid = make_grid(rows, cols, width)
     available_shapes = SHAPES.copy()
-    current_shape = 'L'
-    next_shape = 'L'
+    current_shape = get_shape(available_shapes)
+    next_shape = get_shape(available_shapes)
     tetramino = Tetramino(current_shape, 4, 0)
     pressing_down = False
     fps = 5
@@ -209,7 +209,7 @@ def main(rows, cols, width, win, w_dim, h_dim):
         if tetramino.is_locked():
             tetramino.lock(grid)
             tetramino = Tetramino(next_shape, 4, 0)
-            next_shape = 'L'
+            next_shape = get_shape(available_shapes)
 
         for event in pygame.event.get():
 
