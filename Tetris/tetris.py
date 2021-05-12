@@ -89,16 +89,15 @@ class Tetramino:
         self.y_pos = y
         self.locked = False
 
-    def display_tetramino(self, grid, rows, cols):
+    def display_tetramino(self, win, width, grid, rows, cols):
         count = 0
         for i in range(4):
             for j in range(4):
                 cell_x = self.x_pos + j
                 cell_y = self.y_pos + i
                 if count in self.graphs[self.disposition]:
-                    if not (cell_x > cols - 1 or cell_x < 0 or cell_y > rows - 1 or cell_y < 0):
-                        cell = grid[cell_y][cell_x]
-                        cell.make_occupied(self.type)
+                    pygame.draw.rect(
+                        win, self.color, (cell_x * width, cell_y * width, width, width))
                 count += 1
 
     def next_pos_available(self, grid, rows, cols, next_pos):
@@ -111,13 +110,13 @@ class Tetramino:
                 cell_y = next_y + i
                 if count in self.graphs[self.disposition]:
                     if cell_x > cols - 1 or cell_x < 0 or cell_y > rows - 1 or cell_y < 0:
-                        is_available = False
+                        return False
                     else:
                         # print(str(cell_x) + ", " + str(cell_y))
                         cell = grid[cell_x][cell_y]
                         if cell.is_occupied():
-                            is_available = False
-        return is_available
+                            return False
+        return True
 
     def rotate(self, grid, rows, cols):
         old_disposition = self.disposition
@@ -138,6 +137,16 @@ class Tetramino:
             self.y_pos += 1
         else:
             self.locked = True
+
+    def lock(self, grid):
+        count = 0
+        for i in range(4):
+            for j in range(4):
+                cell_x = self.x_pos + j
+                cell_y = self.y_pos + i
+                if count in self.graphs[self.disposition]:
+                    cell = grid[cell_x][cell_y]
+                    cell.make_occupied(self.type)
 
     def is_locked(self):
         return self.is_locked
@@ -169,6 +178,7 @@ def draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino):
     win.blit(message, (415, 100))
     score = 0
     update_score(win, score)
+    tetramino.display_tetramino(win, width, grid, rows, cols)
     draw_grid(rows, cols, width, win, w_dim, h_dim)
     pygame.display.update()
 
@@ -200,13 +210,17 @@ def main(rows, cols, width, win, w_dim, h_dim):
         if pressing_down:
             fps *= 2
         if tetramino.is_locked():
-            tetramino = Tetramino(next_shape, 4, 0)
-            next_shape = get_shape(available_shapes)
+            tetramino.lock(grid)
+            # tetramino = Tetramino(next_shape, 4, 0)
+            # next_shape = get_shape(available_shapes)
 
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
                 run = False
+            if pygame.mouse.get_pressed()[0]:
+                tetramino = Tetramino(next_shape, 4, 0)
+                next_shape = get_shape(available_shapes)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_UP:
                     tetramino.rotate(grid, rows, cols)
@@ -219,9 +233,8 @@ def main(rows, cols, width, win, w_dim, h_dim):
             if event.type == KEYUP:
                 pressing_down = False
             tetramino.go_down(grid, rows, cols)
-            tetramino.display_tetramino(grid, rows, cols)
             draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino)
-        clock.tick(5)
+        clock.tick(fps)
 
 
 main(ROWS, COLS, WIDTH, WIN, BOARD_WIDTH, H_DIM)
