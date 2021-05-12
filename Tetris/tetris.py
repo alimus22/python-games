@@ -184,7 +184,7 @@ def update_score(win, score):
 
 
 def get_shape(available_shapes):
-    if not available_shapes:
+    if len(available_shapes) < 4:
         available_shapes = SHAPES.copy()
     ran_num = randrange(0, len(available_shapes))
     return available_shapes.pop(ran_num)
