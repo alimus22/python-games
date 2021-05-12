@@ -165,14 +165,13 @@ def draw_grid(rows, cols, width, win, board_dim, h_dim):
         pygame.draw.line(win, BLACK, (j * width, 0), (j * width, h_dim))
 
 
-def draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino):
+def draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino, score):
     win.fill(BLACK)
     for row in grid:
         for cell in row:
             cell.draw(win)
     message = font.render("Score: ", True, RED)
     win.blit(message, (415, 100))
-    score = 0
     update_score(win, score)
     tetramino.display_tetramino(win, width, grid, rows, cols)
     draw_grid(rows, cols, width, win, w_dim, h_dim)
@@ -207,16 +206,17 @@ def break_lines(tetramino, grid, rows, cols):
         if i < rows and i > 0:
             line = grid[i]
             if check_line(line):
-                print("complete line")
                 lines_to_break += 1
                 for j in range(i, 1, -1):
                     for k in range(cols):
                         grid[j][k].occupied = grid[j - 1][k].occupied
                         grid[j][k].tetramino = grid[j - 1][k].tetramino
                         grid[j][k].color = grid[j - 1][k].color
+    return 10 * (lines_to_break ** 2)
 
 
 def main(rows, cols, width, win, w_dim, h_dim):
+    score = 0
     clock = pygame.time.Clock()
     run = True
     grid = make_grid(rows, cols, width)
@@ -232,9 +232,10 @@ def main(rows, cols, width, win, w_dim, h_dim):
             fps = 30
         if tetramino.is_locked():
             tetramino.lock(grid)
-            break_lines(tetramino, grid, rows, cols)
+            new_score = break_lines(tetramino, grid, rows, cols)
             tetramino = Tetramino(next_shape, 4, 0)
             next_shape = get_shape(available_shapes)
+            score += new_score
 
         for event in pygame.event.get():
 
@@ -255,9 +256,8 @@ def main(rows, cols, width, win, w_dim, h_dim):
             if event.type == KEYUP:
                 pressing_down = False
                 fps = 5
-
         tetramino.go_down(grid, rows, cols)
-        draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino)
+        draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino, score)
         clock.tick(fps)
 
 
