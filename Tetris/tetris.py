@@ -4,6 +4,8 @@ import sys
 import random
 from random import *
 
+from pygame.constants import KEYUP
+
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -54,17 +56,20 @@ class Cell:
         self.row = row
         self.col = col
         self.width = width
-        self.is_occupied = False
+        self.occupied = False
         self.tetramino = None
         self.color = WHITE
 
     def make_occupied(self, tetramino):
-        self.is_occupied = True
+        self.occupied = True
         self.tetramino = tetramino
         self.color = colors[tetramino]
 
+    def is_occupied(self):
+        return self.occupied
+
     def not_occupied(self):
-        self.is_occupied = False
+        self.occupied = False
         self.tetramino = None
         self.color = WHITE
 
@@ -84,26 +89,58 @@ class Tetramino:
         self.y_pos = y
         self.locked = False
 
-    def rotate(self):
-        self.disposition = (self.disposition + 1) % len(self.graphs)
-
-    def display_tetrmino(self, grid, rows, cols):
+    def display_tetramino(self, grid, rows, cols):
         count = 0
         for i in range(4):
             for j in range(4):
                 cell_x = self.x_pos + j
                 cell_y = self.y_pos + i
-                if not (cell_x > cols - 1 or cell_x < 0 or cell_y > rows - 1 or cell_y < 0):
-                    if count in self.graphs[self.disposition]:
+                if count in self.graphs[self.disposition]:
+                    if not (cell_x > cols - 1 or cell_x < 0 or cell_y > rows - 1 or cell_y < 0):
                         cell = grid[cell_y][cell_x]
                         cell.make_occupied(self.type)
-                    count += 1
+                count += 1
 
-    def advance(self, grid, rows, cols):
-        self.y_pos += 1
+    def next_pos_available(self, grid, rows, cols, next_pos):
+        count = 0
+        next_x, next_y = next_pos
+        is_available = True
+        for i in range(4):
+            for j in range(4):
+                cell_x = next_x + j
+                cell_y = next_y + i
+                if count in self.graphs[self.disposition]:
+                    if cell_x > cols - 1 or cell_x < 0 or cell_y > rows - 1 or cell_y < 0:
+                        is_available = False
+                    else:
+                        # print(str(cell_x) + ", " + str(cell_y))
+                        cell = grid[cell_x][cell_y]
+                        if cell.is_occupied():
+                            is_available = False
+        return is_available
 
-    def get_color(self):
-        return self.color
+    def rotate(self, grid, rows, cols):
+        old_disposition = self.disposition
+        self.disposition = (self.disposition + 1) % len(self.graphs)
+        if not self.next_pos_available(grid, rows, cols, (self.x_pos, self.y_pos)):
+            self.disposition = old_disposition
+
+    def go_left(self, grid, rows, cols):
+        if self.next_pos_available(grid, rows, cols, (self.x_pos - 1, self.y_pos)):
+            self.x_pos -= 1
+
+    def go_right(self, grid, rows, cols):
+        if self.next_pos_available(grid, rows, cols, (self.x_pos + 1, self.y_pos)):
+            self.x_pos += 1
+
+    def go_down(self, grid, rows, cols):
+        if self.next_pos_available(grid, rows, cols, (self.x_pos, self.y_pos + 1)):
+            self.y_pos += 1
+        else:
+            self.locked = True
+
+    def is_locked(self):
+        return self.is_locked
 
 
 def make_grid(rows, cols, width):
@@ -128,12 +165,11 @@ def draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino):
     for row in grid:
         for cell in row:
             cell.draw(win)
-    draw_grid(rows, cols, width, win, w_dim, h_dim)
     message = font.render("Score: ", True, RED)
     win.blit(message, (415, 100))
     score = 0
     update_score(win, score)
-    tetramino.display_tetrmino(grid, rows, cols)
+    draw_grid(rows, cols, width, win, w_dim, h_dim)
     pygame.display.update()
 
 
@@ -144,7 +180,7 @@ def update_score(win, score):
 
 def get_shape(available_shapes):
     if not available_shapes:
-        available_shapes = SHAPES
+        available_shapes = SHAPES.copy()
     ran_num = randrange(0, len(available_shapes))
     return available_shapes.pop(ran_num)
 
@@ -153,29 +189,38 @@ def main(rows, cols, width, win, w_dim, h_dim):
     clock = pygame.time.Clock()
     run = True
     grid = make_grid(rows, cols, width)
-    available_shapes = SHAPES
+    available_shapes = SHAPES.copy()
     current_shape = get_shape(available_shapes)
     next_shape = get_shape(available_shapes)
     tetramino = Tetramino(current_shape, 4, 0)
-    moving_tetramino = False
+    pressing_down = False
+    fps = 15
 
     while run:
-        if moving_tetramino:
-            pass
-            #tetramino.advance(grid, rows, cols)
-        else:
-            current_shape = next_shape
-            tetramino = Tetramino(current_shape, 4, 0)
+        if pressing_down:
+            fps *= 2
+        if tetramino.is_locked():
+            tetramino = Tetramino(next_shape, 4, 0)
             next_shape = get_shape(available_shapes)
-            moving_tetramino = True
-
-        draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino)
 
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
                 run = False
-
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    tetramino.rotate(grid, rows, cols)
+                if event.key == pygame.K_LEFT:
+                    tetramino.go_left(grid, rows, cols)
+                if event.key == pygame.K_RIGHT:
+                    tetramino.go_right(grid, rows, cols)
+                if event.key == pygame.K_DOWN:
+                    pressing_down = True
+            if event.type == KEYUP:
+                pressing_down = False
+            tetramino.go_down(grid, rows, cols)
+            tetramino.display_tetramino(grid, rows, cols)
+            draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino)
         clock.tick(5)
 
 
