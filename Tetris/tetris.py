@@ -108,7 +108,6 @@ class Tetramino:
                 cell_x = next_x + j
                 cell_y = next_y + i
                 if i * 4 + j in self.graphs[self.disposition]:
-                    # print("From next_pos_available")
                     if cell_x > cols - 1 or cell_x < 0 or cell_y > rows - 1 or grid[cell_y][cell_x].is_occupied():
                         available = False
         return available
@@ -131,7 +130,6 @@ class Tetramino:
         if self.next_pos_available(grid, rows, cols, (self.x_pos, self.y_pos + 1)):
             self.y_pos += 1
         else:
-            # print('From go_down not working')
             self.locked = True
 
     def lock(self, grid):
@@ -140,13 +138,14 @@ class Tetramino:
                 cell_x = self.x_pos + j
                 cell_y = self.y_pos + i
                 if i * 4 + j in self.graphs[self.disposition]:
-                    # print('From lock')
                     cell = grid[cell_y][cell_x]
                     cell.make_occupied(self.type)
 
     def is_locked(self):
-        # print('From is_locked')
         return self.locked
+
+    def get_y_pos(self):
+        return self.y_pos
 
 
 def make_grid(rows, cols, width):
@@ -192,6 +191,31 @@ def get_shape(available_shapes):
     return available_shapes.pop(ran_num)
 
 
+def check_line(line):
+    is_complete = True
+    for cell in line:
+        if not cell.is_occupied():
+            is_complete = False
+            break
+    return is_complete
+
+
+def break_lines(tetramino, grid, rows, cols):
+    start_line = tetramino.get_y_pos()
+    lines_to_break = 0
+    for i in range(start_line, start_line + 4):
+        if i < rows and i > 0:
+            line = grid[i]
+            if check_line(line):
+                print("complete line")
+                lines_to_break += 1
+                for j in range(i, 1, -1):
+                    for k in range(cols):
+                        grid[j][k].occupied = grid[j - 1][k].occupied
+                        grid[j][k].tetramino = grid[j - 1][k].tetramino
+                        grid[j][k].color = grid[j - 1][k].color
+
+
 def main(rows, cols, width, win, w_dim, h_dim):
     clock = pygame.time.Clock()
     run = True
@@ -208,6 +232,7 @@ def main(rows, cols, width, win, w_dim, h_dim):
             fps = 30
         if tetramino.is_locked():
             tetramino.lock(grid)
+            break_lines(tetramino, grid, rows, cols)
             tetramino = Tetramino(next_shape, 4, 0)
             next_shape = get_shape(available_shapes)
 
