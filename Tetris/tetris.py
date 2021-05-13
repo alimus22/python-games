@@ -197,8 +197,6 @@ def update_score(win, score):
 
 
 def get_shape(available_shapes):
-    if len(available_shapes) < 4:
-        available_shapes = SHAPES.copy()
     ran_num = randrange(0, len(available_shapes))
     return available_shapes.pop(ran_num)
 
@@ -234,8 +232,8 @@ def main(rows, cols, width, win, w_dim, h_dim):
     run = True
     grid = make_grid(rows, cols, width)
     available_shapes = SHAPES.copy()
-    current_shape = 'I'
-    next_shape = 'I'
+    current_shape = get_shape(available_shapes)
+    next_shape = get_shape(available_shapes)
     tetramino = Tetramino(current_shape, 4, 0)
     pressing_down = False
     fps = 5
@@ -246,10 +244,12 @@ def main(rows, cols, width, win, w_dim, h_dim):
         if tetramino.is_locked():
             tetramino.lock(grid)
             new_score = break_lines(tetramino, grid, rows, cols)
+            if len(available_shapes) < 2:
+                available_shapes = SHAPES.copy()
             tetramino = Tetramino(next_shape, 4, 0)
-            next_shape = 'I'
+            next_shape = get_shape(available_shapes)
             score += new_score
-
+            pass
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
