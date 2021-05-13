@@ -18,7 +18,7 @@ ORANGE = (255, 100, 0)
 TEAL = (0, 255, 255)
 
 pygame.init()
-W_DIM = 500
+W_DIM = 600
 H_DIM = 800
 BOARD_WIDTH = 400
 WIDTH = 40
@@ -35,7 +35,7 @@ figures = {
     'J': [[1, 2, 5, 9], [4, 5, 6, 10], [1, 5, 9, 8], [0, 4, 5, 6]],
     'L': [[1, 2, 6, 10], [3, 5, 6, 7], [2, 6, 10, 11], [5, 6, 7, 9]],
     'O': [[1, 2, 5, 6]],
-    'S': [[6, 7, 9, 10], [1, 5, 6, 10]],
+    'S': [[5, 6, 8, 9], [1, 5, 6, 10]],
     'T': [[1, 4, 5, 6], [1, 5, 6, 9], [4, 5, 6, 9], [1, 4, 5, 9]],
     'Z': [[4, 5, 9, 10], [2, 6, 5, 9]]
 }
@@ -115,8 +115,17 @@ class Tetramino:
     def rotate(self, grid, rows, cols):
         old_disposition = self.disposition
         self.disposition = (self.disposition + 1) % len(self.graphs)
-        if not self.next_pos_available(grid, rows, cols, (self.x_pos, self.y_pos)):
-            self.disposition = old_disposition
+        for i in range(4):
+            for j in range(4):
+                cell_x = self.x_pos + j
+                cell_y = self.y_pos + i
+                if i * 4 + j in self.graphs[self.disposition]:
+                    if cell_x > cols - 1:
+                        self.x_pos -= 1
+                    elif cell_x < 0:
+                        self.x_pos += 1
+                    elif cell_y > rows - 1 or grid[cell_y][cell_x].is_occupied():
+                        self.disposition = old_disposition
 
     def go_left(self, grid, rows, cols):
         if self.next_pos_available(grid, rows, cols, (self.x_pos - 1, self.y_pos)):
@@ -165,14 +174,18 @@ def draw_grid(rows, cols, width, win, board_dim, h_dim):
         pygame.draw.line(win, BLACK, (j * width, 0), (j * width, h_dim))
 
 
-def draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino, score):
+def draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino, score, next_shape):
     win.fill(BLACK)
     for row in grid:
         for cell in row:
             cell.draw(win)
-    message = font.render("Score: ", True, RED)
-    win.blit(message, (415, 100))
+    message1 = font.render("Score: ", True, RED)
+    message2 = font.render("Next: ", True, RED)
+    win.blit(message1, (430, 100))
+    win.blit(message2, (430, 500))
     update_score(win, score)
+    next_tetramino = Tetramino(next_shape, 11, 14)
+    next_tetramino.display_tetramino(win, width, grid, rows, cols)
     tetramino.display_tetramino(win, width, grid, rows, cols)
     draw_grid(rows, cols, width, win, w_dim, h_dim)
     pygame.display.update()
@@ -221,8 +234,8 @@ def main(rows, cols, width, win, w_dim, h_dim):
     run = True
     grid = make_grid(rows, cols, width)
     available_shapes = SHAPES.copy()
-    current_shape = get_shape(available_shapes)
-    next_shape = get_shape(available_shapes)
+    current_shape = 'I'
+    next_shape = 'I'
     tetramino = Tetramino(current_shape, 4, 0)
     pressing_down = False
     fps = 5
@@ -234,7 +247,7 @@ def main(rows, cols, width, win, w_dim, h_dim):
             tetramino.lock(grid)
             new_score = break_lines(tetramino, grid, rows, cols)
             tetramino = Tetramino(next_shape, 4, 0)
-            next_shape = get_shape(available_shapes)
+            next_shape = 'I'
             score += new_score
 
         for event in pygame.event.get():
@@ -257,7 +270,8 @@ def main(rows, cols, width, win, w_dim, h_dim):
                 pressing_down = False
                 fps = 5
         tetramino.go_down(grid, rows, cols)
-        draw(grid, rows, cols, width, win, w_dim, h_dim, tetramino, score)
+        draw(grid, rows, cols, width, win, w_dim,
+             h_dim, tetramino, score, next_shape)
         clock.tick(fps)
 
 
