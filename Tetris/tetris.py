@@ -34,7 +34,7 @@ font = pygame.font.SysFont('freesansbold.ttf', 35)
 WIN = pygame.display.set_mode((W_DIM, H_DIM))
 pygame.display.set_caption("Tetris")
 
-# List of all possible shape 'ids'
+# List of all possible shape 'IDs'
 SHAPES = ['I', 'J', 'L', 'O', 'S', 'T', 'Z']
 
 # Dict. of all possible configurations for each shape.
